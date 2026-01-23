@@ -3,6 +3,12 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { UsersModule } from './users/users.module';
+import { UserKeysModule } from './user-keys/user-keys.module';
+import { FoldersModule } from './folders/folders.module';
+import { PasswordsModule } from './passwords/passwords.module';
+import { SharesModule } from './shares/shares.module';
+import { AuditLogsModule } from './audit-logs/audit-logs.module';
 
 const toBool = (value: string | undefined, fallback: boolean) => {
   if (value === undefined) {
@@ -24,6 +30,12 @@ const toBool = (value: string | undefined, fallback: boolean) => {
       autoLoadEntities: true,
       synchronize: toBool(process.env.DB_SYNCHRONIZE, true),
     }),
+    UsersModule,
+    UserKeysModule,
+    FoldersModule,
+    PasswordsModule,
+    SharesModule,
+    AuditLogsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
