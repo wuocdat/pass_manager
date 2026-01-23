@@ -14,20 +14,26 @@ export class PasswordsService {
     @InjectRepository(Folder) private readonly foldersRepo: Repository<Folder>,
   ) {}
 
-  async create(dto: CreatePasswordDto) {
-    const owner = await this.usersRepo.findOne({ where: { id: dto.ownerId } });
+  async create(dto: CreatePasswordDto, requester: { id: string; role: 'user' | 'admin' }) {
+    const owner = await this.usersRepo.findOne({ where: { id: requester.id } });
     if (!owner) {
       throw new NotFoundException('Owner not found');
     }
 
     let folder: Folder | null = null;
     if (dto.folderId) {
-      folder = await this.foldersRepo.findOne({ where: { id: dto.folderId } });
+      folder = await this.foldersRepo.findOne({
+        where:
+          requester.role === 'admin'
+            ? { id: dto.folderId }
+            : { id: dto.folderId, owner: { id: requester.id } },
+      });
       if (!folder) {
         throw new NotFoundException('Folder not found');
       }
     }
 
+    const encryptionMeta = { ...dto.encryptionMeta } as Record<string, unknown>;
     const password = this.passwordsRepo.create({
       owner,
       folder,
@@ -36,19 +42,26 @@ export class PasswordsService {
       passwordEncrypted: dto.passwordEncrypted,
       url: dto.url ?? null,
       notes: dto.notes ?? null,
-      encryptionMeta: dto.encryptionMeta,
+      encryptionMeta,
       isPublic: dto.isPublic ?? false,
     });
     return this.passwordsRepo.save(password);
   }
 
-  findAll() {
-    return this.passwordsRepo.find({ relations: ['owner', 'folder'] });
+  findAll(requester: { id: string; role: 'user' | 'admin' }) {
+    if (requester.role === 'admin') {
+      return this.passwordsRepo.find({ relations: ['owner', 'folder'] });
+    }
+    return this.passwordsRepo.find({
+      where: { owner: { id: requester.id } },
+      relations: ['owner', 'folder'],
+    });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, requester: { id: string; role: 'user' | 'admin' }) {
     const password = await this.passwordsRepo.findOne({
-      where: { id },
+      where:
+        requester.role === 'admin' ? { id } : { id, owner: { id: requester.id } },
       relations: ['owner', 'folder'],
     });
     if (!password) {
@@ -57,8 +70,15 @@ export class PasswordsService {
     return password;
   }
 
-  async update(id: string, dto: UpdatePasswordDto) {
-    const password = await this.passwordsRepo.findOne({ where: { id } });
+  async update(
+    id: string,
+    dto: UpdatePasswordDto,
+    requester: { id: string; role: 'user' | 'admin' },
+  ) {
+    const password = await this.passwordsRepo.findOne({
+      where:
+        requester.role === 'admin' ? { id } : { id, owner: { id: requester.id } },
+    });
     if (!password) {
       throw new NotFoundException('Password not found');
     }
@@ -67,7 +87,12 @@ export class PasswordsService {
       if (dto.folderId === null) {
         password.folder = null;
       } else {
-        const folder = await this.foldersRepo.findOne({ where: { id: dto.folderId } });
+        const folder = await this.foldersRepo.findOne({
+          where:
+            requester.role === 'admin'
+              ? { id: dto.folderId }
+              : { id: dto.folderId, owner: { id: requester.id } },
+        });
         if (!folder) {
           throw new NotFoundException('Folder not found');
         }
@@ -96,7 +121,7 @@ export class PasswordsService {
     }
 
     if (dto.encryptionMeta !== undefined) {
-      password.encryptionMeta = dto.encryptionMeta;
+      password.encryptionMeta = { ...dto.encryptionMeta } as Record<string, unknown>;
     }
 
     if (dto.isPublic !== undefined) {
@@ -106,8 +131,11 @@ export class PasswordsService {
     return this.passwordsRepo.save(password);
   }
 
-  async remove(id: string) {
-    const password = await this.passwordsRepo.findOne({ where: { id } });
+  async remove(id: string, requester: { id: string; role: 'user' | 'admin' }) {
+    const password = await this.passwordsRepo.findOne({
+      where:
+        requester.role === 'admin' ? { id } : { id, owner: { id: requester.id } },
+    });
     if (!password) {
       throw new NotFoundException('Password not found');
     }

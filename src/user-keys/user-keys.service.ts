@@ -12,7 +12,10 @@ export class UserKeysService {
     @InjectRepository(User) private readonly usersRepo: Repository<User>,
   ) {}
 
-  async create(dto: CreateUserKeyDto) {
+  async create(dto: CreateUserKeyDto, requester: { id: string; role: 'user' | 'admin' }) {
+    if (requester.role !== 'admin' && dto.userId !== requester.id) {
+      throw new NotFoundException('User not found');
+    }
     const user = await this.usersRepo.findOne({ where: { id: dto.userId } });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -27,20 +30,33 @@ export class UserKeysService {
     return this.keysRepo.save(key);
   }
 
-  findAll() {
-    return this.keysRepo.find({ relations: ['user'] });
+  findAll(requester: { id: string; role: 'user' | 'admin' }) {
+    if (requester.role === 'admin') {
+      return this.keysRepo.find({ relations: ['user'] });
+    }
+    return this.keysRepo.find({
+      where: { user: { id: requester.id } },
+      relations: ['user'],
+    });
   }
 
-  async findOne(id: string) {
-    const key = await this.keysRepo.findOne({ where: { id }, relations: ['user'] });
+  async findOne(id: string, requester: { id: string; role: 'user' | 'admin' }) {
+    const key = await this.keysRepo.findOne({
+      where:
+        requester.role === 'admin' ? { id } : { id, user: { id: requester.id } },
+      relations: ['user'],
+    });
     if (!key) {
       throw new NotFoundException('User key not found');
     }
     return key;
   }
 
-  async remove(id: string) {
-    const key = await this.keysRepo.findOne({ where: { id } });
+  async remove(id: string, requester: { id: string; role: 'user' | 'admin' }) {
+    const key = await this.keysRepo.findOne({
+      where:
+        requester.role === 'admin' ? { id } : { id, user: { id: requester.id } },
+    });
     if (!key) {
       throw new NotFoundException('User key not found');
     }

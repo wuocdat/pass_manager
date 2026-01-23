@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { UserKeysModule } from './user-keys/user-keys.module';
 import { FoldersModule } from './folders/folders.module';
@@ -30,6 +31,7 @@ const toBool = (value: string | undefined, fallback: boolean) => {
       autoLoadEntities: true,
       synchronize: toBool(process.env.DB_SYNCHRONIZE, true),
     }),
+    AuthModule,
     UsersModule,
     UserKeysModule,
     FoldersModule,

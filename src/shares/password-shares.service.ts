@@ -17,8 +17,14 @@ export class PasswordSharesService {
     private readonly usersRepo: Repository<User>,
   ) {}
 
-  async create(dto: CreatePasswordShareDto) {
-    const password = await this.passwordsRepo.findOne({ where: { id: dto.passwordId } });
+  async create(dto: CreatePasswordShareDto, requester: { id: string; role: 'user' | 'admin' }) {
+    const password = await this.passwordsRepo.findOne({
+      where:
+        requester.role === 'admin'
+          ? { id: dto.passwordId }
+          : { id: dto.passwordId, owner: { id: requester.id } },
+      relations: ['owner'],
+    });
     if (!password) {
       throw new NotFoundException('Password not found');
     }
@@ -35,13 +41,22 @@ export class PasswordSharesService {
     return this.sharesRepo.save(share);
   }
 
-  findAll() {
-    return this.sharesRepo.find({ relations: ['password', 'sharedWith'] });
+  findAll(requester: { id: string; role: 'user' | 'admin' }) {
+    if (requester.role === 'admin') {
+      return this.sharesRepo.find({ relations: ['password', 'sharedWith'] });
+    }
+    return this.sharesRepo.find({
+      where: { password: { owner: { id: requester.id } } },
+      relations: ['password', 'sharedWith'],
+    });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, requester: { id: string; role: 'user' | 'admin' }) {
     const share = await this.sharesRepo.findOne({
-      where: { id },
+      where:
+        requester.role === 'admin'
+          ? { id }
+          : { id, password: { owner: { id: requester.id } } },
       relations: ['password', 'sharedWith'],
     });
     if (!share) {
@@ -50,8 +65,13 @@ export class PasswordSharesService {
     return share;
   }
 
-  async remove(id: string) {
-    const share = await this.sharesRepo.findOne({ where: { id } });
+  async remove(id: string, requester: { id: string; role: 'user' | 'admin' }) {
+    const share = await this.sharesRepo.findOne({
+      where:
+        requester.role === 'admin'
+          ? { id }
+          : { id, password: { owner: { id: requester.id } } },
+    });
     if (!share) {
       throw new NotFoundException('Password share not found');
     }

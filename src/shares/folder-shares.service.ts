@@ -17,8 +17,14 @@ export class FolderSharesService {
     private readonly usersRepo: Repository<User>,
   ) {}
 
-  async create(dto: CreateFolderShareDto) {
-    const folder = await this.foldersRepo.findOne({ where: { id: dto.folderId } });
+  async create(dto: CreateFolderShareDto, requester: { id: string; role: 'user' | 'admin' }) {
+    const folder = await this.foldersRepo.findOne({
+      where:
+        requester.role === 'admin'
+          ? { id: dto.folderId }
+          : { id: dto.folderId, owner: { id: requester.id } },
+      relations: ['owner'],
+    });
     if (!folder) {
       throw new NotFoundException('Folder not found');
     }
@@ -35,13 +41,22 @@ export class FolderSharesService {
     return this.sharesRepo.save(share);
   }
 
-  findAll() {
-    return this.sharesRepo.find({ relations: ['folder', 'sharedWith'] });
+  findAll(requester: { id: string; role: 'user' | 'admin' }) {
+    if (requester.role === 'admin') {
+      return this.sharesRepo.find({ relations: ['folder', 'sharedWith'] });
+    }
+    return this.sharesRepo.find({
+      where: { folder: { owner: { id: requester.id } } },
+      relations: ['folder', 'sharedWith'],
+    });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, requester: { id: string; role: 'user' | 'admin' }) {
     const share = await this.sharesRepo.findOne({
-      where: { id },
+      where:
+        requester.role === 'admin'
+          ? { id }
+          : { id, folder: { owner: { id: requester.id } } },
       relations: ['folder', 'sharedWith'],
     });
     if (!share) {
@@ -50,8 +65,13 @@ export class FolderSharesService {
     return share;
   }
 
-  async remove(id: string) {
-    const share = await this.sharesRepo.findOne({ where: { id } });
+  async remove(id: string, requester: { id: string; role: 'user' | 'admin' }) {
+    const share = await this.sharesRepo.findOne({
+      where:
+        requester.role === 'admin'
+          ? { id }
+          : { id, folder: { owner: { id: requester.id } } },
+    });
     if (!share) {
       throw new NotFoundException('Folder share not found');
     }

@@ -12,15 +12,20 @@ export class FoldersService {
     @InjectRepository(User) private readonly usersRepo: Repository<User>,
   ) {}
 
-  async create(dto: CreateFolderDto) {
-    const owner = await this.usersRepo.findOne({ where: { id: dto.ownerId } });
+  async create(dto: CreateFolderDto, requester: { id: string; role: 'user' | 'admin' }) {
+    const owner = await this.usersRepo.findOne({ where: { id: requester.id } });
     if (!owner) {
       throw new NotFoundException('Owner not found');
     }
 
     let parent: Folder | null = null;
     if (dto.parentId) {
-      parent = await this.foldersRepo.findOne({ where: { id: dto.parentId } });
+      parent = await this.foldersRepo.findOne({
+        where:
+          requester.role === 'admin'
+            ? { id: dto.parentId }
+            : { id: dto.parentId, owner: { id: requester.id } },
+      });
       if (!parent) {
         throw new NotFoundException('Parent folder not found');
       }
@@ -36,13 +41,20 @@ export class FoldersService {
     return this.foldersRepo.save(folder);
   }
 
-  findAll() {
-    return this.foldersRepo.find({ relations: ['owner', 'parent'] });
+  findAll(requester: { id: string; role: 'user' | 'admin' }) {
+    if (requester.role === 'admin') {
+      return this.foldersRepo.find({ relations: ['owner', 'parent'] });
+    }
+    return this.foldersRepo.find({
+      where: { owner: { id: requester.id } },
+      relations: ['owner', 'parent'],
+    });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, requester: { id: string; role: 'user' | 'admin' }) {
     const folder = await this.foldersRepo.findOne({
-      where: { id },
+      where:
+        requester.role === 'admin' ? { id } : { id, owner: { id: requester.id } },
       relations: ['owner', 'parent'],
     });
     if (!folder) {
@@ -51,8 +63,15 @@ export class FoldersService {
     return folder;
   }
 
-  async update(id: string, dto: UpdateFolderDto) {
-    const folder = await this.foldersRepo.findOne({ where: { id } });
+  async update(
+    id: string,
+    dto: UpdateFolderDto,
+    requester: { id: string; role: 'user' | 'admin' },
+  ) {
+    const folder = await this.foldersRepo.findOne({
+      where:
+        requester.role === 'admin' ? { id } : { id, owner: { id: requester.id } },
+    });
     if (!folder) {
       throw new NotFoundException('Folder not found');
     }
@@ -61,7 +80,12 @@ export class FoldersService {
       if (dto.parentId === null) {
         folder.parent = null;
       } else {
-        const parent = await this.foldersRepo.findOne({ where: { id: dto.parentId } });
+        const parent = await this.foldersRepo.findOne({
+          where:
+            requester.role === 'admin'
+              ? { id: dto.parentId }
+              : { id: dto.parentId, owner: { id: requester.id } },
+        });
         if (!parent) {
           throw new NotFoundException('Parent folder not found');
         }
@@ -84,8 +108,11 @@ export class FoldersService {
     return this.foldersRepo.save(folder);
   }
 
-  async remove(id: string) {
-    const folder = await this.foldersRepo.findOne({ where: { id } });
+  async remove(id: string, requester: { id: string; role: 'user' | 'admin' }) {
+    const folder = await this.foldersRepo.findOne({
+      where:
+        requester.role === 'admin' ? { id } : { id, owner: { id: requester.id } },
+    });
     if (!folder) {
       throw new NotFoundException('Folder not found');
     }

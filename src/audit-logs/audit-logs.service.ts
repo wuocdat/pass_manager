@@ -12,9 +12,12 @@ export class AuditLogsService {
     @InjectRepository(User) private readonly usersRepo: Repository<User>,
   ) {}
 
-  async create(dto: CreateAuditLogDto) {
+  async create(dto: CreateAuditLogDto, requester: { id: string; role: 'user' | 'admin' }) {
     let user: User | null = null;
     if (dto.userId) {
+      if (requester.role !== 'admin' && dto.userId !== requester.id) {
+        throw new NotFoundException('User not found');
+      }
       user = await this.usersRepo.findOne({ where: { id: dto.userId } });
       if (!user) {
         throw new NotFoundException('User not found');
@@ -30,12 +33,22 @@ export class AuditLogsService {
     return this.logsRepo.save(log);
   }
 
-  findAll() {
-    return this.logsRepo.find({ relations: ['user'] });
+  findAll(requester: { id: string; role: 'user' | 'admin' }) {
+    if (requester.role === 'admin') {
+      return this.logsRepo.find({ relations: ['user'] });
+    }
+    return this.logsRepo.find({
+      where: { user: { id: requester.id } },
+      relations: ['user'],
+    });
   }
 
-  async findOne(id: string) {
-    const log = await this.logsRepo.findOne({ where: { id }, relations: ['user'] });
+  async findOne(id: string, requester: { id: string; role: 'user' | 'admin' }) {
+    const log = await this.logsRepo.findOne({
+      where:
+        requester.role === 'admin' ? { id } : { id, user: { id: requester.id } },
+      relations: ['user'],
+    });
     if (!log) {
       throw new NotFoundException('Audit log not found');
     }
