@@ -37,6 +37,14 @@ export class PasswordsController {
     return this.passwordsService.findAll(req.user);
   }
 
+  @Get('folder/:folderId')
+  findByFolder(
+    @Param('folderId') folderId: string,
+    @Req() req: { user: { id: string; role: 'user' | 'admin' } },
+  ) {
+    return this.passwordsService.findByFolder(folderId, req.user);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string, @Req() req: { user: { id: string; role: 'user' | 'admin' } }) {
     return this.passwordsService.findOne(id, req.user);

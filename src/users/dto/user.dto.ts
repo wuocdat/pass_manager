@@ -16,11 +16,6 @@ export class CreateUserDto {
   @IsString()
   fullName?: string;
 
-  @ApiProperty({ required: false, enum: ['user', 'admin'], default: 'user' })
-  @IsOptional()
-  @IsIn(['user', 'admin'])
-  role?: 'user' | 'admin';
-
   @ApiProperty({ required: false, default: true })
   @IsOptional()
   @IsBoolean()
@@ -43,11 +38,6 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   fullName?: string;
-
-  @ApiProperty({ required: false, enum: ['user', 'admin'] })
-  @IsOptional()
-  @IsIn(['user', 'admin'])
-  role?: 'user' | 'admin';
 
   @ApiProperty({ required: false })
   @IsOptional()

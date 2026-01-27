@@ -58,9 +58,6 @@ export class UsersController {
     if (req.user.role !== 'admin' && req.user.id !== id) {
       throw new ForbiddenException('Access denied');
     }
-    if (req.user.role !== 'admin' && dto.role) {
-      throw new ForbiddenException('Only admin can change role');
-    }
     return this.usersService.update(id, dto);
   }
 

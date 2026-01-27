@@ -58,6 +58,25 @@ export class PasswordsService {
     });
   }
 
+  async findByFolder(
+    folderId: string,
+    requester: { id: string; role: 'user' | 'admin' },
+  ) {
+    const folder = await this.foldersRepo.findOne({
+      where:
+        requester.role === 'admin'
+          ? { id: folderId }
+          : { id: folderId, owner: { id: requester.id } },
+    });
+    if (!folder) {
+      throw new NotFoundException('Folder not found');
+    }
+    return this.passwordsRepo.find({
+      where: { folder: { id: folderId } },
+      relations: ['owner', 'folder'],
+    });
+  }
+
   async findOne(id: string, requester: { id: string; role: 'user' | 'admin' }) {
     const password = await this.passwordsRepo.findOne({
       where:

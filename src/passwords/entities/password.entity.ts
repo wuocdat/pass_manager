@@ -22,7 +22,7 @@ export class Password {
   owner!: User;
 
   @ManyToOne(() => Folder, (folder) => folder.passwords, {
-    onDelete: 'SET NULL',
+    onDelete: 'CASCADE',
     nullable: true,
   })
   @JoinColumn({ name: 'folder_id' })

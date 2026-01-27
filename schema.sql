@@ -48,7 +48,7 @@ CREATE TABLE folders (
 CREATE TABLE passwords (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    folder_id UUID REFERENCES folders(id) ON DELETE SET NULL,
+    folder_id UUID REFERENCES folders(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
     username TEXT,
     password_encrypted TEXT NOT NULL,

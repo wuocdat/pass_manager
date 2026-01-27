@@ -7,11 +7,14 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { User } from '../users/entities/user.entity';
+import { UserKey } from '../user-keys/entities/user-key.entity';
+import { JwtFirstLoginStrategy } from './jwt-first-login.strategy';
+import { ChangePasswordGuard } from './change-password.guard';
 
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, UserKey]),
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -23,6 +26,6 @@ import { User } from '../users/entities/user.entity';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, JwtFirstLoginStrategy, ChangePasswordGuard],
 })
 export class AuthModule {}

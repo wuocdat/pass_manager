@@ -15,7 +15,7 @@ export class UsersService {
       email: dto.email,
       passwordHash,
       fullName: dto.fullName ?? null,
-      role: dto.role ?? 'user',
+      role: 'user',
       isActive: dto.isActive ?? true,
     });
     return this.usersRepo.save(user);
@@ -44,7 +44,6 @@ export class UsersService {
       email: dto.email ?? user.email,
       passwordHash,
       fullName: dto.fullName ?? user.fullName,
-      role: dto.role ?? user.role,
       isActive: dto.isActive ?? user.isActive,
     });
     return this.usersRepo.save(user);

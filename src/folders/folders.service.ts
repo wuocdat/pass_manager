@@ -42,13 +42,17 @@ export class FoldersService {
   }
 
   findAll(requester: { id: string; role: 'user' | 'admin' }) {
-    if (requester.role === 'admin') {
-      return this.foldersRepo.find({ relations: ['owner', 'parent'] });
+    const qb = this.foldersRepo
+      .createQueryBuilder('folder')
+      .leftJoinAndSelect('folder.owner', 'owner')
+      .leftJoinAndSelect('folder.parent', 'parent')
+      .loadRelationCountAndMap('folder.passwordCount', 'folder.passwords');
+
+    if (requester.role !== 'admin') {
+      qb.where('owner.id = :ownerId', { ownerId: requester.id });
     }
-    return this.foldersRepo.find({
-      where: { owner: { id: requester.id } },
-      relations: ['owner', 'parent'],
-    });
+
+    return qb.getMany();
   }
 
   async findOne(id: string, requester: { id: string; role: 'user' | 'admin' }) {
