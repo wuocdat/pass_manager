@@ -1,25 +1,4 @@
 services:
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: pass_manager_api
-    restart: unless-stopped
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: ${DB_USER:-pass_manager}
-      DB_PASSWORD: ${DB_PASSWORD:-pass_manager}
-      DB_NAME: ${DB_NAME:-pass_manager}
-      DB_SYNCHRONIZE: ${DB_SYNCHRONIZE:-true}
-      JWT_SECRET: ${JWT_SECRET:-high_win_n240h}
-      JWT_FIRST_LOGIN_SECRET: ${JWT_FIRST_LOGIN_SECRET:-first_login_high_win_n240h}
-    ports:
-      - "3000:3000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-
   postgres:
     image: postgres:16-alpine
     container_name: pass_manager_postgres
@@ -53,6 +32,28 @@ services:
       - postgres
     volumes:
       - pgadmin_data:/var/lib/pgadmin
+
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pass_manager_api
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-pass_manager}
+      DB_PASSWORD: ${DB_PASSWORD:-pass_manager}
+      DB_NAME: ${DB_NAME:-pass_manager}
+      DB_SYNCHRONIZE: ${DB_SYNCHRONIZE:-true}
+      JWT_SECRET: ${JWT_SECRET:-high_win_n240h}
+      JWT_FIRST_LOGIN_SECRET: ${JWT_FIRST_LOGIN_SECRET:-first_login_high_win_n240h}
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
   postgres_data:
